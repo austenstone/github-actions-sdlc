@@ -26,7 +26,7 @@ npm run check
 git diff -- dist/
 ```
 
-`npm run check` builds the action. Review and commit `dist/index.js` together with source changes. Do not let release consumers depend on `node_modules` existing.
+`npm run check` builds the action and generates [third-party notices](../dist/THIRD_PARTY_NOTICES.txt) from the locked runtime dependencies. Review and commit both generated files together with source changes. Do not let release consumers depend on `node_modules` existing.
 
 Then verify the committed artifact has no remaining drift:
 

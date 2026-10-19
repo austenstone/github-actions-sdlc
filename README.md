@@ -113,4 +113,4 @@ CodeQL, secret scanning, and dependency review are available for this public rep
 
 The examples target GitHub.com. GitHub Enterprise Server versions can differ, notably for event behavior, runner runtimes, and CodeQL language support. Dependencies and external actions are versioned; actions are pinned to full commit SHAs. Review automated updates, rebuild `dist/`, and keep tool hashes current.
 
-Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md). Security reporting is described in [SECURITY.md](SECURITY.md). Original repository code is [MIT licensed](LICENSE); bundled dependencies retain their own notices.
+Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md). Security reporting is described in [SECURITY.md](SECURITY.md). Original repository code is [MIT licensed](LICENSE); bundled dependencies retain their [third-party notices](dist/THIRD_PARTY_NOTICES.txt).

@@ -6,7 +6,7 @@ Before a pull request:
 
 1. Add or update tests for the behavior you change, including failure cases.
 2. Run `npm run format`, `npm run check`, and `npm run validate:workflows`.
-3. Commit any rebuilt `dist/index.js` alongside source. Run `npm run check:dist` after committing.
+3. Commit the rebuilt bundle and notices in `dist/` alongside source. Run `npm run check:dist` after committing.
 4. Run the native branch harness and record the tested SHA and run URL.
 5. Update the event matrix or documentation when behavior changes.
 6. Use the PR template to describe risk, missing coverage, and rollback.
