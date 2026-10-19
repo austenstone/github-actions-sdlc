@@ -1,0 +1,19 @@
+name: Nonexecuted scanner fixture
+on:
+  repository_dispatch:
+    types: [never-send-negative-scanner-fixture]
+
+permissions:
+  contents: read
+
+jobs:
+  fixture:
+    runs-on: ubuntu-slim
+    timeout-minutes: 3
+    env:
+      INVALID_CONTEXT: ${{ nonexistent.value }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - run: echo "${{ github.event.issue.title }}"
