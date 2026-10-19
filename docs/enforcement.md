@@ -23,6 +23,7 @@ GitHub's [required-check troubleshooting guide](https://docs.github.com/en/pull-
 - Binding a required check to the GitHub Actions app prevents another app from satisfying it, but does not make its YAML immutable. An author can change a job with the same name. Review workflow changes; use centrally enforced workflows when that stronger boundary is needed.
 - Static tools catch classes of mistakes. They cannot prove arbitrary code safe, validate every remote system, or simulate actual event delivery.
 - A read-only default token is not an absolute ceiling for same-repository workflow authors. Jobs can request additional supported permissions; environment/ref policies and repository access remain separate controls.
+- Preserve CodeQL analysis categories when refactoring a workflow. Removing a language can leave a stale configuration on the default branch that blocks comparison, even when the new analysis job succeeds. Retire only genuinely obsolete configurations with approval; do not disable the alert rule to make the PR green.
 
 ## This lab's final merge policy
 
@@ -46,6 +47,9 @@ gh api repos/OWNER/REPO/rulesets
 gh api repos/OWNER/REPO/environments/restricted-lab
 gh api repos/OWNER/REPO --jq '.security_and_analysis'
 gh pr checks PR_NUMBER --required
+gh pr view PR_NUMBER --json mergeStateStatus
 ```
 
-Use the actual names reported by check runs. A public personal repository can demonstrate these core capabilities without enterprise features. Forks, private repos, organization-enforced policies, and GHES versions may differ.
+Use the actual names reported by check runs. The CLI's check list alone is not proof of mergeability: an unreported required context or a separate code-scanning rule can still block the PR. Inspect the PR's merge state and required-context configuration too.
+
+A public personal repository can demonstrate these core capabilities without enterprise features. Forks, private repos, organization-enforced policies, and GHES versions may differ.
