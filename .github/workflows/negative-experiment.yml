@@ -1,7 +1,7 @@
 name: Nonexecuted scanner fixture
 on:
-  repository_dispatch:
-    types: [never-send-negative-scanner-fixture]
+  issues:
+    types: [opened]
 
 permissions:
   contents: read
@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 3
     env:
-      INVALID_CONTEXT: ${{ nonexistent.value }}
+      LAB_CANARY: ${{ secrets.LAB_REPO_CANARY }}
     steps:
       - uses: actions/checkout@v7
         with:
