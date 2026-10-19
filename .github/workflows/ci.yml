@@ -1,0 +1,120 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    name: Source and contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run check
+      - run: npm run check:dist
+      - run: npm audit --audit-level=high
+
+  workflows:
+    name: Workflow validators
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.27.2'
+          cache: false
+      - name: Install versioned validators
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --require-hashes --only-binary=:all: -r requirements-tools.txt
+      - name: Validate workflows and negative controls
+        run: |
+          go_path="$(go env GOPATH)"
+          export PATH="${PWD}/.venv/bin:${go_path}/bin:${PATH}"
+          npm run validate:workflows
+
+  native:
+    name: Native action (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Execute the committed action bundle
+        id: plan
+        uses: ./ # zizmor: ignore[self-repository]
+        with:
+          version: 1.2.3
+          target: staging
+      - name: Assert the output contract
+        run: node scripts/assert-plan.ts
+        env:
+          PLAN: ${{ steps.plan.outputs.plan }}
+          EXPECTED_VERSION: 1.2.3
+          EXPECTED_TARGET: staging
+      - name: Reject an invalid request
+        id: invalid
+        continue-on-error: true
+        uses: ./ # zizmor: ignore[self-repository]
+        with:
+          version: not-a-version
+      - name: Require the expected failure
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.invalid.outcome }}
+        run: test "${OUTCOME}" = failure
+
+  reusable:
+    name: Reusable workflow
+    uses: ./.github/workflows/plan.yml # zizmor: ignore[self-repository]
+    with:
+      version: 1.2.3
+      target: preview
+
+  gate:
+    name: Required gate
+    if: ${{ always() }}
+    needs: [source, workflows, native, reusable]
+    runs-on: ubuntu-slim
+    timeout-minutes: 3
+    steps:
+      - name: Require every prerequisite to succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          printf '%s\n' "${RESULTS}" | jq --exit-status 'all(.[]; .result == "success")'

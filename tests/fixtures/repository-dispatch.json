@@ -1,0 +1,8 @@
+{
+  "action": "preview-plan",
+  "client_payload": {
+    "version": "2.3.4",
+    "target": "production",
+    "ref": "untrusted-branch"
+  }
+}

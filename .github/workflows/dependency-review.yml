@@ -1,0 +1,36 @@
+name: Dependency review
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  workflow_dispatch:
+    inputs:
+      base:
+        description: Immutable base commit SHA for a sandbox comparison.
+        type: string
+        required: true
+      head:
+        description: Immutable candidate commit SHA for a sandbox comparison.
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          base-ref: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || inputs.base }}
+          head-ref: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha || inputs.head }}
+          fail-on-severity: low
+          fail-on-scopes: runtime, development, unknown
+          comment-summary-in-pr: never

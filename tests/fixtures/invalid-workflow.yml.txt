@@ -1,0 +1,8 @@
+name: Deliberately invalid fixture, never installed as a workflow
+on: push
+permissions: {}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ unknown_context.value }}"

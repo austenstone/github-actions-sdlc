@@ -1,0 +1,41 @@
+name: Branch smoke
+run-name: Branch smoke | ${{ github.ref_name }} | ${{ inputs.version || '1.2.3' }}
+on:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to validate; no deployment is performed.
+        type: string
+        default: 1.2.3
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    name: Candidate implementation
+    uses: ./.github/workflows/plan.yml # zizmor: ignore[self-repository]
+    with:
+      version: ${{ inputs.version || '1.2.3' }}
+      target: preview
+  verify:
+    name: Verify candidate identity
+    needs: candidate
+    runs-on: ubuntu-slim
+    timeout-minutes: 3
+    steps:
+      - name: Verify the candidate commit was checked out
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          TESTED_SHA: ${{ needs.candidate.outputs.tested-sha }}
+          PLAN: ${{ needs.candidate.outputs.plan }}
+        run: |
+          test "${TESTED_SHA}" = "${EXPECTED_SHA}"
+          printf '%s\n' "${PLAN}" | jq --exit-status '.dryRun == true and .target == "preview"'

@@ -1,0 +1,59 @@
+name: Reusable preview plan
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      target:
+        type: string
+        default: preview
+    outputs:
+      plan:
+        description: Validated JSON plan from the candidate action.
+        value: ${{ jobs.plan.outputs.plan }}
+      tested-sha:
+        description: Actual checked-out commit, not an assumed branch name.
+        value: ${{ jobs.plan.outputs.tested-sha }}
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Build and assert preview plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      plan: ${{ steps.plan.outputs.plan }}
+      tested-sha: ${{ steps.checkout.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        id: checkout
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - run: npm ci
+      - run: npm run check:dist
+      - id: plan
+        uses: ./ # zizmor: ignore[self-repository]
+        with:
+          version: ${{ inputs.version }}
+          target: ${{ inputs.target }}
+      - run: node scripts/assert-plan.ts
+        env:
+          PLAN: ${{ steps.plan.outputs.plan }}
+          EXPECTED_VERSION: ${{ inputs.version }}
+          EXPECTED_TARGET: ${{ inputs.target }}
+      - name: Record execution identity
+        env:
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          CHECKOUT_SHA: ${{ steps.checkout.outputs.commit }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          printf 'Event: %s\n\nWorkflow ref: %s\n\nWorkflow SHA: %s\n\nCheckout SHA: %s\n' \
+            "${EVENT_NAME}" "${WORKFLOW_REF}" "${WORKFLOW_SHA}" "${CHECKOUT_SHA}" >> "${GITHUB_STEP_SUMMARY}"
