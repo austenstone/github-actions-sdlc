@@ -6,21 +6,3 @@ updates:
       default-days: 7
     schedule:
       interval: weekly
-  - package-ecosystem: npm
-    directory: /
-    cooldown:
-      default-days: 7
-    groups:
-      vitest:
-        patterns: [vitest, '@vitest/*']
-    ignore:
-      - dependency-name: '@types/node'
-        update-types: [version-update:semver-major]
-    schedule:
-      interval: weekly
-  - package-ecosystem: pip
-    directory: /
-    cooldown:
-      default-days: 7
-    schedule:
-      interval: weekly

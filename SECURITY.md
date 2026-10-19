@@ -1,7 +1,9 @@
 # Security
 
-This repository is a demonstration. The example action creates a plan only and has no production deployment capability.
+This lab has no deployment application or real credentials. Synthetic canaries are random values used only to check availability; workflows print booleans, never their contents.
 
-Report security issues privately through GitHub's repository security advisory reporting when available. Do not include active credentials, sensitive customer data, or a live exploit against another repository in a public issue. If private reporting is unavailable, contact the repository owner before disclosing sensitive details.
+The manual write-token probe creates a non-required commit status on its own repository and SHA. The environment probe uses a dedicated main-only environment, not production. Never point these workflows at real deployment credentials.
 
-Use synthetic values for tests. Never place real secrets into fixtures to test scanning. A clean scanner result is not a guarantee of safety.
+Branch authors can edit workflows. Repository-level secrets, write tokens, required-check names, and scanner configuration are not immutable just because the branch is named an experiment. Require appropriate review and protected environments; use a separate repository when actual credential isolation is needed.
+
+Report vulnerabilities using this repository's private security reporting. Do not publish real credentials or customer data.

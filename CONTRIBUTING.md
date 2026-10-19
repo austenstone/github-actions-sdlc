@@ -1,18 +1,9 @@
 # Contributing
 
-Start with the [local setup](README.md#install-and-verify) and [SDLC](docs/sdlc.md). Work in your own fork or an authorized branch.
+Keep this a small workflow lab: concise YAML, established validators, and evidence-backed documentation. Do not add an application, custom action, scripts directory, or test framework.
 
-Before a pull request:
+Use a branch and a normal PR. Record the event, workflow SHA, checkout SHA, run URL, and result. Tests on an old revision do not prove the new one works.
 
-1. Add or update tests for the behavior you change, including failure cases.
-2. Run `npm run format`, `npm run check`, and `npm run validate:workflows`.
-3. Commit the rebuilt bundle and notices in `dist/` alongside source. Run `npm run check:dist` after committing.
-4. Run the native branch harness and record the tested SHA and run URL.
-5. Update the event matrix or documentation when behavior changes.
-6. Use the PR template to describe risk, missing coverage, and rollback.
+Required checks are actionlint, zizmor, CodeQL Actions, and the native runtime experiment. Pin external actions to full commit SHAs. Do not weaken a check to make an experiment pass.
 
-Do not add real secrets, customer data, or proprietary examples. Deliberately unsafe scanner fixtures must stay inert (`.yml.txt`), never installed under `.github/workflows`.
-
-Keep actions pinned to full SHAs with version comments. Update tool versions and hash locks together. npm dependency versions respect the maintainer's release-age policy; do not disable that policy to force a newer release.
-
-Do not weaken required checks or introduce broad exceptions to make a change pass. Security and policy exceptions need an owner, reason, bounded scope, and expiry.
+Deliberate failures belong in explicitly identified experiment commits and must be removed before merge. Use synthetic secrets only; never print their values. A fork or extra credential requires a specific demonstrated need, not a default setup step.
