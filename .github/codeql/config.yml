@@ -1,4 +1,0 @@
-name: Source and workflow analysis
-paths-ignore:
-  - dist
-  - tests/fixtures

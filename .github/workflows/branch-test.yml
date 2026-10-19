@@ -1,15 +1,11 @@
-name: Branch smoke
-run-name: Branch smoke | ${{ github.ref_name }} | ${{ inputs.version || '1.2.3' }}
+name: Manual isolation experiment
 on:
-  push:
-    branches-ignore: [main]
   workflow_dispatch:
     inputs:
-      version:
-        description: Version to validate; no deployment is performed.
-        type: string
-        default: 1.2.3
-        required: true
+      environment:
+        description: Also attempt the main-only synthetic environment.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -19,23 +15,65 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  candidate:
-    name: Candidate implementation
-    uses: ./.github/workflows/plan.yml # zizmor: ignore[self-repository]
-    with:
-      version: ${{ inputs.version || '1.2.3' }}
-      target: preview
-  verify:
-    name: Verify candidate identity
-    needs: candidate
+  manual:
+    name: Manual evidence
     runs-on: ubuntu-slim
     timeout-minutes: 3
     steps:
-      - name: Verify the candidate commit was checked out
+      - name: Observe a manual run on this exact revision
         env:
-          EXPECTED_SHA: ${{ github.sha }}
-          TESTED_SHA: ${{ needs.candidate.outputs.tested-sha }}
-          PLAN: ${{ needs.candidate.outputs.plan }}
+          REPO_CANARY_PRESENT: ${{ secrets.LAB_REPO_CANARY != '' }}
         run: |
-          test "${TESTED_SHA}" = "${EXPECTED_SHA}"
-          printf '%s\n' "${PLAN}" | jq --exit-status '.dryRun == true and .target == "preview"'
+          {
+            printf 'Event: %s\n\nRef: %s\n\nSHA: %s\n\n' "${GITHUB_EVENT_NAME}" "${GITHUB_REF}" "${GITHUB_SHA}"
+            printf 'Synthetic repository secret available: %s\n' "${REPO_CANARY_PRESENT}"
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
+
+  read:
+    name: Read-token probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      statuses: read # Deliberately insufficient for the write probe.
+    steps:
+      - name: A read-only token cannot publish a commit status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            --field state=success --field context='Lab read-token probe' > "${RUNNER_TEMP}/response" 2>&1; then
+            echo 'Unexpected write access' >&2
+            exit 1
+          fi
+          grep --fixed-strings '(HTTP 403)' "${RUNNER_TEMP}/response"
+          echo 'Read-token status creation rejected: HTTP 403' >> "${GITHUB_STEP_SUMMARY}"
+
+  write:
+    name: Write-token probe
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      statuses: write # Synthetic status on this run's commit, never a required check.
+    steps:
+      - name: A branch workflow can request repository write authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --include --method POST "repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
+            --field state=success --field context='Lab write-token probe' > "${RUNNER_TEMP}/response"
+          grep --extended-regexp '^HTTP/[0-9.]+ 201' "${RUNNER_TEMP}/response"
+          echo 'Write-token status creation accepted: HTTP 201' >> "${GITHUB_STEP_SUMMARY}"
+
+  environment:
+    name: Environment probe
+    if: ${{ inputs.environment }}
+    runs-on: ubuntu-slim
+    timeout-minutes: 3
+    environment: restricted-lab
+    steps:
+      - name: This step runs only after environment policy allows the ref
+        env:
+          ENV_CANARY_PRESENT: ${{ secrets.LAB_ENV_CANARY != '' }}
+        run: |
+          printf 'Synthetic environment secret available: %s\n' "${ENV_CANARY_PRESENT}" | tee -a "${GITHUB_STEP_SUMMARY}"
+          test "${ENV_CANARY_PRESENT}" = true

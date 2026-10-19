@@ -1,15 +1,12 @@
-# Change and risk
+## Workflow change
 
-What behavior changes, and which trust boundary does it cross?
+What changes, and does it alter triggers, permissions, secrets, or environments?
 
 ## Evidence
 
-- [ ] Local checks and negative controls pass.
-- [ ] The committed bundle matches the source.
-- [ ] Native run links and tested commit SHA are recorded below.
-- [ ] Changed triggers are checked against the event matrix.
-- [ ] No candidate code receives production credentials.
-- [ ] Any missing native event coverage is explicit.
-- [ ] Rollback or revert is described for behavior-changing work.
+Link the candidate run and record its event, workflow SHA, checkout SHA, and result.
+Describe what cannot be reproduced on a branch and any difference in credentials.
 
-Run links, tested SHA, remaining gaps, and rollback:
+## Merge
+
+Required checks must pass for the current candidate. A linked manual run alone is not a gate.

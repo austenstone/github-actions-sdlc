@@ -1,39 +1,37 @@
-name: Default-branch event adapter
+name: Runtime experiment
 on:
-  schedule:
-    - cron: '23 7 * * 2'
+  push:
+  pull_request:
+  merge_group:
+  workflow_dispatch:
   repository_dispatch:
     types: [preview-plan]
+  schedule:
+    - cron: '23 7 * * 2'
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  normalize:
-    name: Normalize real event
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      version: ${{ steps.inputs.outputs.version }}
-      target: ${{ steps.inputs.outputs.target }}
+  observe:
+    name: Runtime experiment
+    runs-on: ubuntu-slim
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .node-version
-          package-manager-cache: false
-      - id: inputs
-        run: node scripts/event-inputs.ts
-  plan:
-    name: Run normalized plan
-    needs: normalize
-    uses: ./.github/workflows/plan.yml # zizmor: ignore[self-repository]
-    with:
-      version: ${{ needs.normalize.outputs.version }}
-      target: ${{ needs.normalize.outputs.target }}
+      - name: Observe the definition and checked-out revision
+        env:
+          MARKER: workflow-lab-v1
+          REPO_CANARY_PRESENT: ${{ secrets.LAB_REPO_CANARY != '' }}
+        run: |
+          {
+            printf 'Marker: %s\n\nEvent: %s\n\nRef: %s\n\n' "${MARKER}" "${GITHUB_EVENT_NAME}" "${GITHUB_REF}"
+            printf 'Workflow SHA: %s\n\nCheckout SHA: %s\n\n' "${GITHUB_WORKFLOW_SHA}" "$(git rev-parse HEAD)"
+            printf 'Synthetic repository secret available: %s\n' "${REPO_CANARY_PRESENT}"
+          } | tee -a "${GITHUB_STEP_SUMMARY}"
