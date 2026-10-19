@@ -35,5 +35,3 @@ jobs:
             printf 'Workflow SHA: %s\n\nCheckout SHA: %s\n\n' "${GITHUB_WORKFLOW_SHA}" "$(git rev-parse HEAD)"
             printf 'Synthetic repository secret available: %s\n' "${REPO_CANARY_PRESENT}"
           } | tee -a "${GITHUB_STEP_SUMMARY}"
-      - name: Deliberate runtime failure for the latest-revision experiment
-        run: exit 1
