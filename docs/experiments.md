@@ -20,6 +20,8 @@ On an experiment branch, add a workflow triggered only by a unique `repository_d
 
 Open the PR and inspect the scanner logs. The validators read the proposed YAML; they do not need to execute that workflow's trigger. Record the actual diagnostic and blocked required check. Remove the defect before merge.
 
+For a CodeQL negative test, use a valid, default-only `issues` workflow referencing only a synthetic canary and an unsafe issue-title interpolation. Keep it off main and do not send the event. Unlike the deliberately invalid YAML, this lets CodeQL analyze a meaningful event/input combination. Observe the separate alert-policy check, not just whether the analysis job completed. The [recorded results](results.md) show both outcomes.
+
 Do not add `pull_request_target`, execute untrusted input, or expose credentials merely to demonstrate a scanner.
 
 ## 3. Compare manual evidence with an enforced runtime check
